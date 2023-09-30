@@ -1,10 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
+import { app, database } from './firebase';
 
 export default function App() {
+  alert(JSON.stringify(app, null, 4))
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
+      <Text>Hello Camera!</Text>
       <StatusBar style="auto" />
     </View>
   );
