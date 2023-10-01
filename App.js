@@ -1,9 +1,15 @@
 import { StatusBar } from 'expo-status-bar';
-import { FlatList, Button, StyleSheet, Text, TextInput, View } from 'react-native';
-import { app, database } from './firebase';
+import { FlatList, Button, StyleSheet, Text, TextInput, View, Image } from 'react-native';
+import { app, database, storage } from './firebase';
 import { useState } from 'react';
 import { useCollection } from 'react-firebase-hooks/firestore'
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+
+//Image picker
+import * as ImagePicker from 'expo-image-picker'
+
+//import method used to upload
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function App() {
   //alert(JSON.stringify(app, null, 4))
@@ -33,8 +39,9 @@ const ListPage = () => {
     setText("");
     }
 
-  function openEditMenu(noteInfo){
-    setEditObject(noteInfo)
+  function openEditMenu(noteItem){
+    setEditObject(noteItem)
+    setText(noteItem.note)
   }
 
   async function updateNote(){
@@ -48,6 +55,7 @@ const ListPage = () => {
     await deleteDoc(doc(database, "notes", id))
   }
 
+
   return (
     <View>
       
@@ -60,6 +68,7 @@ const ListPage = () => {
             style={styles.textInput} 
             defaultValue={editObject.note} 
             onChangeText={(txt) => setText(txt)} />
+          <NoteImage note={editObject} />
           <Button 
             title='Save'
             onPress={updateNote} />  
@@ -71,6 +80,7 @@ const ListPage = () => {
             style={styles.textInput} 
             value={text}
             onChangeText={(txt) => setText(txt)} />
+          <NoteImage />
           <Button 
             title='Add note' 
             onPress={addNote}
@@ -92,6 +102,7 @@ const ListPage = () => {
               <Button 
                 title='Edit' 
                 onPress={() => openEditMenu(note.item)} />       
+
             </View>
         }
           
@@ -99,6 +110,66 @@ const ListPage = () => {
       </View>
 
     </View>
+  )
+}
+
+const NoteImage = (props) => {
+
+    //Image picker
+    const [imagePath, setImagePath] = useState(null)
+    async function lauchImagePicker(){
+      let result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true
+      })
+      if (!result.canceled){
+        setImagePath(result.assets[0].uri) //this one is detailed 
+      }
+    }
+  
+    async function uploadImage () {
+      id = props.note.id || "myImage"
+      const resource = await fetch(imagePath)
+      const blob = await resource.blob()
+      const storageRef = ref(storage, id + ".jpg")
+      uploadBytes(storageRef, blob).then((snapshot) => 
+      alert("image uploaded "+id))
+    }
+  
+    //download
+    async function downloadImage () {
+      getDownloadURL(ref(storage, "myimage.jpg"))
+      .then((url) => {
+        setImagePath(url)
+      })
+      .catch((err) => {
+        alert('image could not be downloaded '+ err)
+      })
+    }
+  
+
+  return(
+      <View>
+
+      <Image 
+        style={{width:200, height: 200 }}
+        source={{uri: imagePath}} />
+
+      <Button 
+        onPress={lauchImagePicker}
+        title={imagePath ? 'pick new image' : 'pick image'} />
+
+      {imagePath && 
+      <Button 
+        onPress={() => uploadImage()}
+        title='upload image' />}
+
+        
+        <Button 
+          onPress={downloadImage}
+          title='download image'/>
+
+
+      </View>
   )
 }
 
