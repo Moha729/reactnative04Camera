@@ -40,6 +40,7 @@ const ListPage = () => {
     }
 
   function openEditMenu(noteItem){
+    downloadImage(noteItem.id)
     setEditObject(noteItem)
     setText(noteItem.note)
   }
@@ -55,6 +56,21 @@ const ListPage = () => {
     await deleteDoc(doc(database, "notes", id))
   }
 
+  //Image state
+  const [imagePath, setImagePath] = useState(null)
+  //download
+  async function downloadImage (id) {
+    id = id || "myimage"
+    getDownloadURL(ref(storage, id+".jpg"))
+    .then((url) => {
+      setImagePath(url)
+    })
+    .catch((err) => {
+      alert('image could not be downloaded '+ err)
+      downloadImage()
+    })
+  }
+
 
   return (
     <View>
@@ -68,7 +84,7 @@ const ListPage = () => {
             style={styles.textInput} 
             defaultValue={editObject.note} 
             onChangeText={(txt) => setText(txt)} />
-          <NoteImage note={editObject} />
+          <NoteImage note={editObject} imagePath={imagePath} setImagePath={setImagePath} />
           <Button 
             title='Save'
             onPress={updateNote} />  
@@ -80,7 +96,7 @@ const ListPage = () => {
             style={styles.textInput} 
             value={text}
             onChangeText={(txt) => setText(txt)} />
-          <NoteImage />
+          <NoteImage imagePath={imagePath} setImagePath={setImagePath} />
           <Button 
             title='Add note' 
             onPress={addNote}
@@ -92,7 +108,7 @@ const ListPage = () => {
           data={data}
           renderItem={(note) => 
             <View>
-              <Text>
+              <Text> 
                 {note.item.note}
               </Text>
               <Button 
@@ -116,58 +132,47 @@ const ListPage = () => {
 const NoteImage = (props) => {
 
     //Image picker
-    const [imagePath, setImagePath] = useState(null)
     async function lauchImagePicker(){
       let result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: true
       })
       if (!result.canceled){
-        setImagePath(result.assets[0].uri) //this one is detailed 
+        props.setImagePath(result.assets[0].uri) //this one is detailed 
       }
     }
   
     async function uploadImage () {
       id = props.note.id || "myImage"
-      const resource = await fetch(imagePath)
+      const resource = await fetch(props.imagePath)
       const blob = await resource.blob()
       const storageRef = ref(storage, id + ".jpg")
       uploadBytes(storageRef, blob).then((snapshot) => 
       alert("image uploaded "+id))
     }
   
-    //download
-    async function downloadImage () {
-      getDownloadURL(ref(storage, "myimage.jpg"))
-      .then((url) => {
-        setImagePath(url)
-      })
-      .catch((err) => {
-        alert('image could not be downloaded '+ err)
-      })
-    }
-  
+    
 
   return(
       <View>
 
       <Image 
         style={{width:200, height: 200 }}
-        source={{uri: imagePath}} />
+        source={{uri: props.imagePath}} />
 
       <Button 
         onPress={lauchImagePicker}
-        title={imagePath ? 'pick new image' : 'pick image'} />
+        title={props.imagePath ? 'pick new image' : 'pick image'} />
 
-      {imagePath && 
+      {props.imagePath && 
       <Button 
         onPress={() => uploadImage()}
         title='upload image' />}
 
         
-        <Button 
+{/*         <Button 
           onPress={downloadImage}
           title='download image'/>
-
+ */}
 
       </View>
   )
